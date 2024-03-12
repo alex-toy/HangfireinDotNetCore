@@ -1,83 +1,53 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HangfireApp.Controllers
 {
-    public class JobController : Controller
+    [Route("api/[Controller]")]
+    public class JobController : ControllerBase
     {
-        // GET: JobController
-        public ActionResult Index()
-        {
-            return View();
-        }
-
-        // GET: JobController/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
-
-        // GET: JobController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: JobController/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        [Route("CreateBackgroundJob")]
+        public ActionResult CreateBackgroundJob()
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            BackgroundJob.Enqueue(() => Console.WriteLine("background job triggered"));
+            return Ok("hello world");
         }
 
-        // GET: JobController/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
-
-        // POST: JobController/Edit/5
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        [Route("CreateScheduledJob")]
+        public ActionResult CreateScheduledJob()
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            DateTime scheduleDate = DateTime.UtcNow.AddSeconds(5);
+            DateTimeOffset offset = new DateTimeOffset(scheduleDate);
+
+            BackgroundJob.Schedule(() => Console.WriteLine("background job triggered"), offset);
+            return Ok("hello world");
         }
 
-        // GET: JobController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
-
-        // POST: JobController/Delete/5
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        [Route("CreateContinuationJob")]
+        public ActionResult CreateContinuationJob()
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            DateTime scheduleDate = DateTime.UtcNow.AddSeconds(5);
+            DateTimeOffset offset = new DateTimeOffset(scheduleDate);
+
+            string jobId1 = BackgroundJob.Schedule(() => Console.WriteLine("background job triggered"), offset);
+
+            string jobId2 = BackgroundJob.ContinueJobWith(jobId1, () => Console.WriteLine("continuation 1 job triggered"));
+
+            string jobId3 = BackgroundJob.ContinueJobWith(jobId2, () => Console.WriteLine("continuation 1 job triggered"));
+
+            return Ok("hello world");
+        }
+
+        [HttpPost]
+        [Route("CreateRecurringJob")]
+        public ActionResult CreateRecurringJob()
+        {
+            RecurringJob.AddOrUpdate("recurring_job_1", () => Console.WriteLine("recurring job triggered"), "* * * * *");
+
+            return Ok("hello world");
         }
     }
 }
