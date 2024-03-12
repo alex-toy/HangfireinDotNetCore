@@ -1,4 +1,5 @@
 ﻿using Hangfire;
+using HangfireApp.Jobs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HangfireApp.Controllers
@@ -36,7 +37,7 @@ namespace HangfireApp.Controllers
 
             string jobId2 = BackgroundJob.ContinueJobWith(jobId1, () => Console.WriteLine("continuation 1 job triggered"));
 
-            string jobId3 = BackgroundJob.ContinueJobWith(jobId2, () => Console.WriteLine("continuation 1 job triggered"));
+            string jobId3 = BackgroundJob.ContinueJobWith(jobId2, () => Console.WriteLine("continuation 2 job triggered"));
 
             return Ok("hello world");
         }
@@ -46,6 +47,23 @@ namespace HangfireApp.Controllers
         public ActionResult CreateRecurringJob()
         {
             RecurringJob.AddOrUpdate("recurring_job_1", () => Console.WriteLine("recurring job triggered"), "* * * * *");
+
+            return Ok("hello world");
+        }
+
+        [HttpPost]
+        [Route("CreateJob")]
+        public ActionResult CreateJob()
+        {
+            BackgroundJob.Enqueue<TestJob>(x => x.WriteLog("background job triggered"));
+
+            DateTime scheduleDate = DateTime.UtcNow.AddSeconds(5);
+            DateTimeOffset offset = new DateTimeOffset(scheduleDate);
+            BackgroundJob.Schedule<TestJob>(x => x.WriteLog("background job triggered"), offset);
+
+            string jobId1 = BackgroundJob.Schedule<TestJob>(x => x.WriteLog("background job triggered"), offset);
+            string jobId2 = BackgroundJob.ContinueJobWith<TestJob>(jobId1, x => x.WriteLog("continuation 1 job triggered"));
+            string jobId3 = BackgroundJob.ContinueJobWith<TestJob>(jobId2, x => x.WriteLog("continuation 2 job triggered"));
 
             return Ok("hello world");
         }
