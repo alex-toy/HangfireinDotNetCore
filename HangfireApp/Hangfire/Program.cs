@@ -5,8 +5,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddHangfire();
+builder.Services.AddHangfire((serviceProvider, config) =>
+{
 
+    string ConnectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection");
+    config.UseSqlServerStorage(ConnectionString);
+});
+builder.Services.AddHangfireServer();
 
 
 
